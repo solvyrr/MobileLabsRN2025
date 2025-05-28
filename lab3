@@ -1,0 +1,112 @@
+import React, { useState } from 'react';
+import { Text, View, StyleSheet, FlatList, Platform } from 'react-native';
+import {
+  GestureHandlerRootView,
+  TapGestureHandler,
+  LongPressGestureHandler,
+} from 'react-native-gesture-handler';
+
+export default function App() {
+  const [score, setScore] = useState(0);
+  const [clicks, setClicks] = useState(0);
+  const [doubleClicks, setDoubleClicks] = useState(0);
+  const [longPressDone, setLongPressDone] = useState(false);
+
+  const handleSingleTap = () => {
+    setScore(prev => prev + 1);
+    setClicks(prev => prev + 1);
+  };
+
+  const handleDoubleTap = () => {
+    setScore(prev => prev + 2);
+    setDoubleClicks(prev => prev + 1);
+  };
+
+  const handleLongPress = () => {
+    if (!longPressDone) {
+      setScore(prev => prev + 5);
+      setLongPressDone(true);
+    }
+  };
+
+  const tasks = [
+    { id: '1', text: 'Зробити 10 кліків', done: clicks >= 10 },
+    { id: '2', text: 'Зробити подвійний клік 5 разів', done: doubleClicks >= 5 },
+    { id: '3', text: "Утримувати об'єкт 3 секунди", done: longPressDone },
+    { id: '4', text: 'Отримати 100 очок', done: score >= 100 },
+  ];
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Очки: {score}</Text>
+
+        <LongPressGestureHandler
+          onHandlerStateChange={({ nativeEvent }) => {
+            if (nativeEvent.state === 4) handleLongPress();
+          }}
+          minDurationMs={3000}
+        >
+          <TapGestureHandler
+            numberOfTaps={2}
+            onActivated={handleDoubleTap}
+          >
+            <TapGestureHandler
+              numberOfTaps={1}
+              onActivated={handleSingleTap}
+            >
+              <View style={styles.clicker}>
+                <Text style={styles.clickerText}>🎯</Text>
+              </View>
+            </TapGestureHandler>
+          </TapGestureHandler>
+        </LongPressGestureHandler>
+
+        <Text style={styles.subtitle}>Завдання:</Text>
+        <FlatList
+          data={tasks}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <Text style={{ color: item.done ? 'green' : 'white' }}>
+              {item.text}
+            </Text>
+          )}
+        />
+      </View>
+    </GestureHandlerRootView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#1b1b1b',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    padding: 20,
+    paddingTop: Platform.OS === 'android' ? 40 : 60, // відступ згори
+  },
+  title: {
+    fontSize: 28,
+    color: '#fff',
+    marginBottom: 20,
+  },
+  subtitle: {
+    fontSize: 20,
+    color: '#ccc',
+    marginTop: 30,
+    marginBottom: 10,
+  },
+  clicker: {
+    backgroundColor: '#333',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  clickerText: {
+    fontSize: 48,
+  },
+});
