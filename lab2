@@ -1,0 +1,274 @@
+import React, { createContext, useContext, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+import { FlatList, Image, Switch, Text, TouchableOpacity } from 'react-native';
+import styled, { ThemeProvider } from 'styled-components/native';
+
+const lightTheme = {
+  background: '#1b2838',
+  text: '#c7d5e0',
+  card: '#2a475e',
+  button: '#66c0f4',
+};
+
+const darkTheme = {
+  background: '#1b2838',
+  text: '#c7d5e0',
+  card: '#2a475e',
+  button: '#66c0f4',
+};
+
+const ThemeContext = createContext({});
+const ThemeProviderCustom = ({ children }) => {
+  const [isDark, setIsDark] = useState(true);
+  const toggleTheme = () => setIsDark(!isDark);
+  return (
+    <ThemeContext.Provider value={{ theme: isDark ? darkTheme : lightTheme, toggleTheme, isDark }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+const useTheme = () => useContext(ThemeContext);
+
+const Container = styled.View`
+  flex: 1;
+  padding: 10px;
+  background-color: ${({ theme }) => theme.background};
+`;
+const Title = styled.Text`
+  font-size: 22px;
+  font-weight: bold;
+  color: ${({ theme }) => theme.text};
+  margin-bottom: 10px;
+`;
+const Card = styled.View`
+  background-color: ${({ theme }) => theme.card};
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+`;
+const CardTitle = styled.Text`
+  color: ${({ theme }) => theme.text};
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 6px;
+`;
+const ChatItem = styled.View`
+  flex-direction: row;
+  align-items: center;
+  padding: 10px;
+  background-color: ${({ theme }) => theme.card};
+  margin-bottom: 10px;
+  border-radius: 4px;
+`;
+const ChatText = styled.Text`
+  color: ${({ theme }) => theme.text};
+  font-size: 15px;
+  margin-left: 10px;
+`;
+
+const StoreScreen = () => {
+  const games = [
+    { id: '1', title: 'Cyberpunk 2077', image: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/header.jpg' },
+    { id: '2', title: 'Elden Ring', image: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/header.jpg' },
+    { id: '3', title: 'Baldur’s Gate 3', image: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1086940/header.jpg' }
+  ];
+  return (
+    <Container>
+      <Title>Featured & Recommended</Title>
+      <FlatList
+        data={games}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <Card>
+            <Image source={{ uri: item.image }} style={{ height: 180, borderRadius: 4 }} />
+            <CardTitle>{item.title}</CardTitle>
+          </Card>
+        )}
+      />
+    </Container>
+  );
+};
+
+const CommunityScreen = () => {
+  const news = [
+    {
+      id: '1',
+      title: 'Cyberpunk 2077 Update 2.1 Adds Metro System & New Content',
+      image: 'https://cdn.cloudflare.steamstatic.com/steam/news/9673942/header.jpg',
+      date: 'May 20, 2025'
+    },
+    {
+      id: '2',
+      title: 'Elden Ring: Shadow of the Erdtree Expansion Announced',
+      image: 'https://cdn.cloudflare.steamstatic.com/steam/news/9681534/header.jpg',
+      date: 'May 18, 2025'
+    },
+    {
+      id: '3',
+      title: 'Baldur’s Gate 3 Patch #6 Brings New Cinematics and Bug Fixes',
+      image: 'https://cdn.cloudflare.steamstatic.com/steam/news/9658125/header.jpg',
+      date: 'May 15, 2025'
+    },
+    {
+      id: '4',
+      title: 'Hades II Enters Early Access with New Gods and Enemies',
+      image: 'https://cdn.cloudflare.steamstatic.com/steam/news/9647341/header.jpg',
+      date: 'May 10, 2025'
+    },
+    {
+      id: '5',
+      title: 'Stardew Valley 1.6 Update: New Crops, Events, and More!',
+      image: 'https://cdn.cloudflare.steamstatic.com/steam/news/9661110/header.jpg',
+      date: 'May 7, 2025'
+    }
+  ];
+
+  return (
+    <Container>
+      <Title>Game News</Title>
+      <FlatList
+        data={news}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <Card>
+            <Image
+              source={{ uri: item.image }}
+              style={{ height: 180, borderRadius: 4, marginBottom: 8 }}
+              resizeMode="cover"
+            />
+            <CardTitle>{item.title}</CardTitle>
+            <Text style={{ color: '#aaa', marginTop: 4 }}>{item.date}</Text>
+          </Card>
+        )}
+      />
+    </Container>
+  );
+};
+
+const ChatScreen = () => {
+  const chats = [
+    { id: '1', name: 'Valve Dev', avatar: 'https://i.pravatar.cc/150?img=10' },
+    { id: '2', name: 'SteamUser101', avatar: 'https://i.pravatar.cc/150?img=12' },
+    { id: '3', name: 'Co-op Buddy', avatar: 'https://i.pravatar.cc/150?img=13' }
+  ];
+  return (
+    <Container>
+      <Title>Chats</Title>
+      <FlatList
+        data={chats}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <ChatItem>
+            <Image source={{ uri: item.avatar }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+            <ChatText>{item.name}</ChatText>
+          </ChatItem>
+        )}
+      />
+    </Container>
+  );
+};
+
+const SafetyScreen = () => (
+  <Container>
+    <Title>Account Security</Title>
+    <Card><CardTitle>Steam Guard Enabled</CardTitle></Card>
+    <Card><CardTitle>2FA via Mobile</CardTitle></Card>
+    <Card><CardTitle>Trusted Devices</CardTitle></Card>
+  </Container>
+);
+
+const ProfileScreen = () => {
+  const { toggleTheme, isDark, theme } = useTheme();
+
+  return (
+    <Container>
+      <Title>My Steam Profile</Title>
+
+      <Card style={{ alignItems: 'center', paddingVertical: 20 }}>
+        <Image
+          source={{ uri: 'https://i.pravatar.cc/150?img=25' }}
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            borderWidth: 3,
+            borderColor: theme.button,
+            marginBottom: 12,
+          }}
+        />
+        <CardTitle style={{ fontSize: 24, fontWeight: 'bold' }}>ValveFan92</CardTitle>
+        <Text style={{ color: theme.text, fontSize: 16, marginTop: 4, marginBottom: 12 }}>
+          Ukraine
+        </Text>
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: theme.button,
+            paddingVertical: 10,
+            paddingHorizontal: 30,
+            borderRadius: 20,
+          }}
+          onPress={() => alert('Edit profile pressed')}
+        >
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Edit Profile</Text>
+        </TouchableOpacity>
+      </Card>
+
+      <Card>
+        <CardTitle>Level & Achievements</CardTitle>
+        <Text style={{ color: theme.text, marginTop: 6 }}>
+          Level 15 — 3,420 XP
+        </Text>
+        {/* Можно добавить прогресс-бар, иконки достижений и т.п. */}
+      </Card>
+
+      <Card style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <CardTitle>Dark Mode</CardTitle>
+        <Switch value={isDark} onValueChange={toggleTheme} />
+      </Card>
+    </Container>
+  );
+};
+
+const Tab = createBottomTabNavigator();
+function AppInner() {
+  const { theme } = useTheme();
+  return (
+    <ThemeProvider theme={theme}>
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarStyle: { backgroundColor: theme.card },
+            tabBarIcon: ({ color, size }) => {
+              let icon = 'home';
+              if (route.name === 'Store') icon = 'game-controller';
+              if (route.name === 'Community') icon = 'people';
+              if (route.name === 'Chat') icon = 'chatbubbles';
+              if (route.name === 'Safety') icon = 'shield-checkmark';
+              if (route.name === 'Profile') icon = 'person-circle';
+              return <Ionicons name={icon} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: theme.button,
+            tabBarInactiveTintColor: '#888'
+          })}
+        >
+          <Tab.Screen name="Store" component={StoreScreen} />
+          <Tab.Screen name="Community" component={CommunityScreen} />
+          <Tab.Screen name="Chat" component={ChatScreen} />
+          <Tab.Screen name="Safety" component={SafetyScreen} />
+          <Tab.Screen name="Profile" component={ProfileScreen} />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProviderCustom>
+      <AppInner />
+    </ThemeProviderCustom>
+  );
+}
