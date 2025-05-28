@@ -1,0 +1,147 @@
+import React from 'react';
+import { View, Text, TextInput, Button, StyleSheet, Image, ScrollView } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
+function HomeScreen() {
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Image source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/f/f8/LogoZhytomyrPolitech.png' }} style={styles.logo} />
+      <Text style={styles.appTitle}>FirstMobileApp</Text>
+      <Text style={styles.pageTitle}>Новини</Text>
+      {[...Array(6)].map((_, i) => (
+        <View key={i} style={styles.newsItem}>
+          <Image source={{ uri: 'https://via.placeholder.com/60' }} style={styles.newsImage} />
+          <View style={styles.newsText}>
+            <Text style={styles.newsTitle}>Заголовок новини</Text>
+            <Text style={styles.newsDate}>Дата новини</Text>
+            <Text style={styles.newsDescription}>Короткий текст новини</Text>
+          </View>
+        </View>
+      ))}
+      <Text style={styles.footer}>Прізвище ім’я та по-батькові, група</Text>
+    </ScrollView>
+  );
+}
+
+function GalleryScreen() {
+  return (
+    <View style={styles.container}>
+      <Image source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/f/f8/LogoZhytomyrPolitech.png' }} style={styles.logo} />
+      <Text style={styles.appTitle}>FirstMobileApp</Text>
+      <Text style={styles.pageTitle}>Фотогалерея (в розробці)</Text>
+      <Text style={styles.footer}>Прізвище ім’я та по-батькові, група</Text>
+    </View>
+  );
+}
+
+function ProfileScreen() {
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Image source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/f/f8/LogoZhytomyrPolitech.png' }} style={styles.logo} />
+      <Text style={styles.appTitle}>FirstMobileApp</Text>
+      <Text style={styles.pageTitle}>Реєстрація</Text>
+      <TextInput style={styles.input} placeholder="Електронна пошта" />
+      <TextInput style={styles.input} placeholder="Пароль" secureTextEntry />
+      <TextInput style={styles.input} placeholder="Пароль (ще раз)" secureTextEntry />
+      <TextInput style={styles.input} placeholder="Прізвище" />
+      <TextInput style={styles.input} placeholder="Ім’я" />
+      <View style={styles.buttonContainer}>
+        <Button title="Зареєструватися" color="#007BFF" onPress={() => {}} />
+      </View>
+      <Text style={styles.footer}>Прізвище ім’я та по-батькові, група</Text>
+    </ScrollView>
+  );
+}
+
+const Tab = createBottomTabNavigator();
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => {
+            let iconName;
+            if (route.name === 'Головна') iconName = 'home';
+            else if (route.name === 'Фотогалерея') iconName = 'images';
+            else if (route.name === 'Профіль') iconName = 'person';
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+        })}
+      >
+        <Tab.Screen name="Головна" component={HomeScreen} />
+        <Tab.Screen name="Фотогалерея" component={GalleryScreen} />
+        <Tab.Screen name="Профіль" component={ProfileScreen} />
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 20,
+  },
+  logo: {
+    width: 120,
+    height: 40,
+    resizeMode: 'contain',
+    marginTop: 10,
+  },
+  appTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 20,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  input: {
+    width: '100%',
+    height: 45,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 6,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  buttonContainer: {
+    marginTop: 10,
+    width: '100%',
+  },
+  footer: {
+    marginTop: 30,
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+  },
+  newsItem: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    width: '100%',
+  },
+  newsImage: {
+    width: 60,
+    height: 60,
+    marginRight: 10,
+  },
+  newsText: {
+    flex: 1,
+  },
+  newsTitle: {
+    fontWeight: 'bold',
+  },
+  newsDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  newsDescription: {
+    fontSize: 14,
+  },
+});
