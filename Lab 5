@@ -1,0 +1,382 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  Alert,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Button,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
+} from 'react-native';
+import * as FileSystem from 'expo-file-system';
+
+const rootDir = FileSystem.documentDirectory;
+const screenWidth = Dimensions.get('window').width;
+
+export default function App() {
+  const [currentPath, setCurrentPath] = useState(rootDir);
+  const [items, setItems] = useState([]);
+  const [fileName, setFileName] = useState('');
+  const [fileContent, setFileContent] = useState('');
+  const [editMode, setEditMode] = useState(false);
+  const [currentFile, setCurrentFile] = useState(null);
+  const [showFileEditor, setShowFileEditor] = useState(false);
+  const [freeSpace, setFreeSpace] = useState(null);
+  const [totalSpace, setTotalSpace] = useState(null);
+
+  useEffect(() => {
+    loadFiles();
+    loadDiskInfo();
+  }, [currentPath]);
+
+  const loadDiskInfo = async () => {
+    const free = await FileSystem.getFreeDiskStorageAsync();
+    const total = await FileSystem.getTotalDiskCapacityAsync();
+    setFreeSpace(free);
+    setTotalSpace(total);
+  };
+
+  const loadFiles = async () => {
+    try {
+      const list = await FileSystem.readDirectoryAsync(currentPath);
+      const detailedList = await Promise.all(
+        list.map(async (name) => {
+          const info = await FileSystem.getInfoAsync(currentPath + name);
+          return { name, ...info };
+        })
+      );
+      setItems(detailedList);
+      setShowFileEditor(false);
+      setFileName('');
+      setFileContent('');
+      setEditMode(false);
+      setCurrentFile(null);
+    } catch (e) {
+      Alert.alert('Помилка', 'Не вдалося прочитати каталог');
+    }
+  };
+
+  const openFolder = (name) => {
+    setCurrentPath(currentPath + name + '/');
+  };
+
+  const goBack = () => {
+    if (currentPath === rootDir) return;
+    const parts = currentPath.split('/').filter(Boolean);
+    parts.pop();
+    const newPath = parts.length ? parts.join('/') + '/' : rootDir;
+    setCurrentPath(newPath);
+  };
+
+  const createFolder = async () => {
+    if (!fileName) {
+      Alert.alert('Помилка', 'Введіть назву папки');
+      return;
+    }
+    try {
+      await FileSystem.makeDirectoryAsync(currentPath + fileName);
+      setFileName('');
+      loadFiles();
+    } catch (e) {
+      Alert.alert('Помилка', 'Не вдалося створити папку');
+    }
+  };
+
+  const createFile = async () => {
+    if (!fileName.endsWith('.txt')) {
+      Alert.alert('Помилка', 'Файл повинен мати розширення .txt');
+      return;
+    }
+    try {
+      await FileSystem.writeAsStringAsync(currentPath + fileName, fileContent);
+      setFileName('');
+      setFileContent('');
+      loadFiles();
+    } catch (e) {
+      Alert.alert('Помилка', 'Не вдалося створити файл');
+    }
+  };
+
+  const readFile = async (name) => {
+    try {
+      const content = await FileSystem.readAsStringAsync(currentPath + name);
+      setFileContent(content);
+      setFileName(name);
+      setEditMode(true);
+      setCurrentFile(name);
+      setShowFileEditor(true);
+    } catch (e) {
+      Alert.alert('Помилка', 'Не вдалося відкрити файл');
+    }
+  };
+
+  const saveEdit = async () => {
+    try {
+      await FileSystem.writeAsStringAsync(currentPath + currentFile, fileContent);
+      setEditMode(false);
+      setCurrentFile(null);
+      setFileContent('');
+      setFileName('');
+      setShowFileEditor(false);
+      loadFiles();
+    } catch (e) {
+      Alert.alert('Помилка', 'Не вдалося зберегти файл');
+    }
+  };
+
+  const deleteItem = async (name, isDirectory) => {
+    Alert.alert('Видалити?', name, [
+      { text: 'Скасувати', style: 'cancel' },
+      {
+        text: 'Видалити',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await FileSystem.deleteAsync(currentPath + name, { idempotent: true });
+            loadFiles();
+          } catch {
+            Alert.alert('Помилка', 'Не вдалося видалити');
+          }
+        },
+      },
+    ]);
+  };
+
+  const renderItem = ({ item }) => (
+    <View style={styles.fileItem}>
+      <TouchableOpacity
+        style={styles.fileNameWrap}
+        onPress={() => {
+          if (item.isDirectory) {
+            openFolder(item.name);
+          } else {
+            readFile(item.name);
+          }
+        }}
+      >
+        <Text style={styles.fileName}>
+          {item.isDirectory ? '📁 ' : '📄 '}
+          {item.name}
+        </Text>
+        <Text style={styles.fileInfo}>
+          {item.size ? `Розмір: ${item.size} байт` : ''}
+          {' '}
+          {item.modificationTime ? `| Останнє змінення: ${new Date(item.modificationTime * 1000).toLocaleString()}` : ''}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => deleteItem(item.name, item.isDirectory)} style={styles.deleteButton}>
+        <Text style={{ fontSize: 18 }}>🗑</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+      >
+        <>
+          <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.header}>📁 Файловий Менеджер</Text>
+
+            <View style={styles.pathBar}>
+              <Button title="⬅ Назад" onPress={goBack} disabled={currentPath === rootDir} />
+              <Text
+                style={styles.pathText}
+                numberOfLines={1}
+                ellipsizeMode="middle"
+              >
+                {currentPath.replace(rootDir, '') || '/'}
+              </Text>
+            </View>
+
+            {!showFileEditor && (
+              <>
+                <TextInput
+                  placeholder="Назва файлу або папки"
+                  value={fileName}
+                  onChangeText={setFileName}
+                  style={styles.input}
+                  textAlign="center"
+                  maxLength={50}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                />
+                <TextInput
+                  placeholder="Вміст файлу (для файлів)"
+                  value={fileContent}
+                  onChangeText={setFileContent}
+                  multiline
+                  style={[styles.textArea, { height: 100 }]}
+                  textAlignVertical="top"
+                />
+
+                <View style={styles.buttonsRow}>
+                  <TouchableOpacity style={styles.button} onPress={createFile}>
+                    <Text style={styles.buttonText}>📝 Створити файл</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.button, styles.folderButton]} onPress={createFolder}>
+                    <Text style={styles.buttonText}>📁 Створити папку</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            {showFileEditor && (
+              <>
+                <Text style={styles.editingTitle}>Редагування файлу: {fileName}</Text>
+                <TextInput
+                  value={fileContent}
+                  onChangeText={setFileContent}
+                  multiline
+                  style={[styles.textArea, { height: 200 }]}
+                  textAlignVertical="top"
+                />
+                <View style={styles.buttonsRow}>
+                  <TouchableOpacity style={styles.button} onPress={saveEdit}>
+                    <Text style={styles.buttonText}>💾 Зберегти зміни</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setShowFileEditor(false)}>
+                    <Text style={styles.buttonText}>❌ Відмінити</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            <Text style={styles.subHeader}>Список файлів та папок:</Text>
+            <FlatList
+              data={items}
+              keyExtractor={(item) => item.name}
+              renderItem={renderItem}
+              contentContainerStyle={{ paddingBottom: 150 }}
+              keyboardShouldPersistTaps="handled"
+              style={{ width: '100%' }}
+            />
+          </ScrollView>
+
+          {/* Фіксований блок інформації про пам’ять */}
+          <View style={styles.diskInfo}>
+            <Text>Вільне місце: {(freeSpace / (1024 * 1024)).toFixed(2)} MB</Text>
+            <Text>Загальна пам'ять: {(totalSpace / (1024 * 1024)).toFixed(2)} MB</Text>
+            <Text>Використано: {((totalSpace - freeSpace) / (1024 * 1024)).toFixed(2)} MB</Text>
+          </View>
+        </>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#fafafa' },
+  scrollContainer: {
+    alignItems: 'center',
+    paddingBottom: 100,
+    paddingTop: 10,
+    width: '100%',
+  },
+  header: { fontSize: 28, fontWeight: 'bold', marginBottom: 20, color: '#333' },
+  pathBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    width: screenWidth,
+  },
+  pathText: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#555',
+  },
+  input: {
+    width: '90%',
+    borderWidth: 1,
+    borderColor: '#bbb',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  textArea: {
+    width: '90%',
+    borderWidth: 1,
+    borderColor: '#bbb',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    fontSize: 16,
+    marginBottom: 15,
+  },
+  buttonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '90%',
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: 140,
+  },
+  folderButton: {
+    backgroundColor: '#10b981',
+  },
+  cancelButton: {
+    backgroundColor: '#ef4444',
+  },
+  buttonText: { color: '#fff', fontWeight: '600', textAlign: 'center', fontSize: 16 },
+  fileItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    width: screenWidth,
+  },
+  fileNameWrap: { flex: 1 },
+  fileName: { fontSize: 18, color: '#222' },
+  fileInfo: { fontSize: 12, color: '#666' },
+  deleteButton: { paddingHorizontal: 15 },
+  editingTitle: {
+    fontSize: 20,
+    marginBottom: 10,
+    fontWeight: '600',
+    color: '#111',
+  },
+  subHeader: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    paddingLeft: 15,
+    color: '#222',
+  },
+  diskInfo: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#eee',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+    alignItems: 'center',
+  },
+});
